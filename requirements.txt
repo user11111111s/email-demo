@@ -1,6 +1,6 @@
-flask
-flask-sqlalchemy
-pandas
-openpyxl
-email-validator
+Flask
+sendgrid
+Jinja2
+python-dotenv
 requests
+

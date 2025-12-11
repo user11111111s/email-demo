@@ -1,70 +1,271 @@
-# 📧 IEI Automated Email Dispatch System
+# Automated Email Dispatch System  
+A backend system for sending dynamic, personalized emails using Flask, Jinja2 templates, and SendGrid.
 
-An automated bulk email dispatching system built with Python and Flask. This powerful tool allows you to schedule campaigns, track open/click rates, and manage recipients via CSV/Excel uploads.
-
-## 🚀 Features
-- **Secure Authentication**: Uses App-Specific Passwords for Gmail/SMTP integration.
-- **Bulk Sending**: Efficiently handles email dispatching.
-- **Campaign Management**: Organize emails into campaigns.
-- **Analytics Dashboard**: Real-time tracking of:
-  - 📩 Sent Emails
-  - 👁️ Opened Emails (Pixel Tracking)
-  - 🔗 Clicked Links
-  - ❌ Bounced/Failed Deliveries
-- **Rich Editor**: WYSIWYG editor for composing beautiful emails.
+This project demonstrates core components of an automated email delivery system, including template rendering, API-based sending, and environment-driven configuration.  
+It is designed for team development using proper Git workflows.
 
 ---
 
-## 🛠️ Setup Instructions
+## 1. Features Implemented 
 
-### 1. Prerequisites
-- **Python 3.8+** must be installed.
-- **Git** (optional, for cloning).
-
-### 2. Installation
-1.  **Open a Terminal** in the project folder:
-    ```bash
-    cd "path/to/IEI_Automated_Email_dispatch"
-    ```
-
-2.  **Create a Virtual Environment** (Recommended):
-    ```bash
-    python -m venv venv
-    ```
-
-3.  **Activate the Virtual Environment**:
-    - **Windows**:
-      ```powershell
-      .\venv\Scripts\activate
-      ```
-    - **Mac/Linux**:
-      ```bash
-      source venv/bin/activate
-      ```
-
-4.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-### 3. Running the Application
-1.  **Initialize the Database** (First time only):
-    The app will automatically create `app.db` when you run it for the first time.
-
-2.  **Start the Server**:
-    ```bash
-    python run.py
-    ```
-
-3.  **Access the App**:
-    Open your browser and navigate to:
-    👉 **http://127.0.0.1:5000**
+- `/ping` endpoint for server health check  
+- `/send-email` POST endpoint for sending personalized emails  
+- HTML email templating using Jinja2  
+- SendGrid email integration using API Key  
+- Returns SendGrid `message_id` for tracking  
+- Clean, modular project structure  
+- Environment variable support using `.env`  
+- Git branching workflow (feature-branches)
 
 ---
 
-## ⚙️ Configuration Notes
-- **App Passwords**: If using Gmail, you MUST enable 2-Factor Authentication and generate an "App Password". Do not use your regular login password.
-- **Tracking**: For open/click tracking to work effectively, the application must be running. If sending to real external users, this app needs to be hosted on a public server or exposed via a tunnel (like `ngrok`).
+## 2. Project Structure
+
+```
+
+email-demo/
+│
+├── app.py                     # Main Flask application
+├── requirements.txt           # Python dependencies
+├── .env.example               # Template for environment variables (no secrets)
+│
+├── templates/
+│   └── email_template.html    # HTML email template
+│
+└── README.md                  # Project documentation
+
+```
 
 ---
-**Created for IEI Lab**
+
+## 3. Setup Instructions
+
+### Step 1: Clone the repository
+```
+
+git clone <your_repository_url>
+cd email-demo
+
+```
+
+### Step 2: Create and activate a virtual environment
+
+PowerShell:
+```
+
+python -m venv venv
+venv\Scripts\Activate.ps1
+
+```
+
+CMD:
+```
+
+python -m venv venv
+venv\Scripts\activate
+
+```
+
+### Step 3: Install dependencies
+```
+
+pip install -r requirements.txt
+
+```
+
+### Step 4: Create your `.env` file  
+Create a new file named `.env` in the project root with the following:
+
+```
+
+SENDGRID_API_KEY=your_sendgrid_api_key_here
+SENDER_EMAIL=your_verified_sender_email_here
+FLASK_APP=app.py
+
+```
+
+Note: The sender email must be verified in your SendGrid dashboard.
+
+---
+
+## 4. Running the Server
+
+PowerShell:
+```
+
+venv\Scripts\Activate.ps1
+python -m flask run
+
+```
+
+CMD:
+```
+
+venv\Scripts\activate
+python -m flask run
+
+```
+
+The server will start on:
+```
+
+[http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+```
+
+---
+
+## 5. API Endpoints
+
+### 5.1 Health Check  
+```
+
+GET /ping
+
+````
+
+Example response:
+```json
+{
+  "message": "Server is running!"
+}
+````
+
+---
+
+### 5.2 Send Personalized Email
+
+```
+POST /send-email
+```
+
+#### Request JSON:
+
+```json
+{
+  "email": "recipient@example.com",
+  "name": "User Name"
+}
+```
+
+#### Example CURL (run in CMD):
+
+```
+curl -X POST http://127.0.0.1:5000/send-email -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"name\":\"User\"}"
+```
+
+#### Expected Response:
+
+```json
+{
+  "message": "Email accepted",
+  "status": 202,
+  "provider_message_id": "sendgrid-message-id"
+}
+```
+
+---
+
+## 6. Email Template
+
+The email HTML template is stored in:
+
+```
+templates/email_template.html
+```
+
+Example template:
+
+```html
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>Hello {{ name }}!</h2>
+    <p>This is your personalized email generated by our automated system.</p>
+</body>
+</html>
+```
+
+Jinja automatically replaces `{{ name }}` with the value provided in the POST request.
+
+---
+
+## 7. Development Workflow (Team Guidelines)
+
+This project uses a professional Git workflow.
+
+### Creating a new feature branch:
+
+```
+git checkout -b feat/send-email
+```
+
+Other example branches:
+
+```
+feat/bulk-send
+feat/webhook
+feat/dashboard
+```
+
+### After completing work:
+
+```
+git add .
+git commit -m "Implemented email sending functionality"
+git push origin feat/send-email
+```
+
+### Merge process:
+
+1. Open a Pull Request (PR) on GitHub
+2. Request team review if needed
+3. Merge into `main` once approved
+
+This keeps the main branch stable and prevents conflicts.
+
+---
+
+## 8. Next Phase (Future Features)
+
+### Bulk Email Sending
+
+* CSV upload
+* Loop sending
+* Per-email logging
+* Rate limit handling
+
+### Webhook Integration
+
+* Delivery events
+* Bounce tracking
+* Drop and spam reporting
+* Open and click events
+
+### Database Logging
+
+* Store message ID, recipient, timestamp, status
+* Query logs in dashboard
+
+### Dashboard UI
+
+* View all email logs
+* Filter by status
+* Search by email or name
+
+---
+
+## 9. Contributors
+
+* Miguel (Lead Developer)
+* Additional team members can be added here.
+
+---
+
+## 10. Notes
+
+* Do not commit your `.env` file.
+* Use `.env.example` for sharing environment variable format.
+* Keep feature branches small and focused.
+
+```
