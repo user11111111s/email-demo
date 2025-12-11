@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IEI Email Dispatcher</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Quill CSS for Editor, only if needed -->
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar glass-panel">
+        <a href="{{ url_for('dashboard') }}" class="brand">
+            <i class="fa-solid fa-paper-plane"></i> IEI Dispatcher
+        </a>
+        <div class="nav-links">
+            {% if session.get('sender_email') %}
+                <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
+                <a href="{{ url_for('new_campaign') }}">New Campaign</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="#" class="active">Setup</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} animate-fade-in">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

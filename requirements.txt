@@ -1,0 +1,6 @@
+flask
+flask-sqlalchemy
+pandas
+openpyxl
+email-validator
+requests
