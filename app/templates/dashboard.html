@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Dashboard</h1>
+        <a href="{{ url_for('new_campaign') }}" class="btn btn-primary">
+            <i class="fa-solid fa-plus" style="margin-right: 0.5rem;"></i> New Campaign
+        </a>
+    </div>
+
+    {% if campaigns %}
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--border); color: var(--text-muted);">
+                <th style="padding: 1rem;">Campaign Name</th>
+                <th style="padding: 1rem;">Status</th>
+                <th style="padding: 1rem;">Date Created</th>
+                <th style="padding: 1rem;">Sent</th>
+                <th style="padding: 1rem;">Opens</th>
+                <th style="padding: 1rem;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for campaign in campaigns %}
+            <tr style="border-bottom: 1px solid var(--border); transition: background 0.3s;" class="hover-row">
+                <td style="padding: 1rem;">
+                    <strong>{{ campaign.name }}</strong><br>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ campaign.subject }}</span>
+                </td>
+                <td style="padding: 1rem;">
+                    <span
+                        style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+                        {{ campaign.status }}
+                    </span>
+                </td>
+                <td style="padding: 1rem;">{{ campaign.created_at }}</td>
+                <td style="padding: 1rem;">{{ campaign.sent_count }} / {{ campaign.total_recipients }}</td>
+                <td style="padding: 1rem;">
+                    <div style="display: flex; gap: 1rem;">
+                        <span><i class="fa-regular fa-envelope-open"></i> {{ campaign.open_count }}</span>
+                        <span><i class="fa-solid fa-arrow-pointer"></i> {{ campaign.click_count }}</span>
+                    </div>
+                </td>
+                <td style="padding: 1rem;">
+                    <a href="{{ url_for('campaign_detail', campaign_id=campaign.id) }}" class="btn btn-secondary"
+                        style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                        View
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+        <i class="fa-solid fa-paper-plane" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+        <h3>No campaigns yet</h3>
+        <p>Start your first email campaign today.</p>
+        <br>
+        <a href="{{ url_for('new_campaign') }}" class="btn btn-primary">Create Campaign</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
