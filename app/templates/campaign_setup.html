@@ -8,14 +8,23 @@
 <div class="glass-panel animate-fade-in" style="padding: 2rem; max-width: 900px; margin: 0 auto;">
     <h1>Create Campaign</h1>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
     <form id="campaign-form" method="POST" action="{{ url_for('create_campaign') }}" enctype="multipart/form-data">
         <!-- Step 1: List Upload -->
         <div style="margin-bottom: 3rem;">
-            <h3 style="margin-bottom: 1rem; color: var(--primary);">1. Recipients</h3>
+            <h3 style="margin-bottom: 1rem; color: var(--secondary);">1. Recipients</h3>
 
-            <div id="drop-zone" class="upload-zone">
+            <div id="drop-zone" class="upload-zone" ondragover="event.preventDefault(); this.classList.add('dragover');"
+                ondragleave="this.classList.remove('dragover');" ondrop="handleDrop(event)">
                 <i class="fa-solid fa-cloud-arrow-up"
-                    style="font-size: 2rem; margin-bottom: 1rem; color: var(--text-muted);"></i>
+                    style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);"></i>
                 <p>Drag & Drop your CSV/Excel file here</p>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.5rem 0;">or</p>
                 <button type="button" class="btn btn-secondary"
@@ -23,28 +32,29 @@
                 <input type="file" id="file-input" name="recipient_file" accept=".csv, .xlsx" style="display: none;"
                     onchange="handleFileSelect(this)">
                 <p id="file-name" style="margin-top: 1rem; font-weight: 600; color: var(--primary);"></p>
+                <div id="upload-error" style="color: var(--danger); margin-top: 0.5rem; display: none;"></div>
             </div>
 
-            <!-- Preview Table -->
-            <div id="csv-preview" style="margin-top: 1rem; display: none;">
-                <h4>Map Columns</h4>
-                <p style="font-size: 0.9rem; color: var(--text-muted);">Select the column that contains email addresses:
-                </p>
-                <select name="email_column" id="email-column-select" style="margin-top: 0.5rem; max-width: 300px;"
-                    required>
-                    <!-- Populated by JS -->
-                </select>
-                <div style="overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 8px;">
-                    <table id="preview-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
-                        <!-- Populated by JS -->
-                    </table>
+            <!-- Mapping Section -->
+            <div id="mapping-section"
+                style="margin-top: 1.5rem; display: none; padding: 1.5rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
+                <h4>Map Email Column</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">Please select the column that contains the email
+                    addresses:</p>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="email-column-select">Email Column</label>
+                    <select name="email_column_select" id="email-column-select" required>
+                        <option value="" disabled selected>Select a column...</option>
+                    </select>
                 </div>
+                <input type="hidden" name="email_column_text" id="email_column_text">
             </div>
         </div>
 
         <!-- Step 2: Message Composition -->
         <div style="margin-bottom: 3rem;">
-            <h3 style="margin-bottom: 1rem; color: var(--primary);">2. Message</h3>
+            <h3 style="margin-bottom: 1rem; color: var(--secondary);">2. Message</h3>
 
             <div class="form-group">
                 <label for="campaign_name">Campaign Name (Internal)</label>
@@ -59,7 +69,8 @@
 
             <div class="form-group">
                 <label>Message Body</label>
-                <div style="background: white; color: black; border-radius: 8px; overflow: hidden;">
+                <div
+                    style="background: white; color: black; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-accent);">
                     <div id="editor" style="height: 300px;"></div>
                 </div>
                 <input type="hidden" name="body_content" id="body_content">
@@ -70,9 +81,6 @@
                     onclick="insertTrackingLink()">
                     <i class="fa-solid fa-link" style="margin-right: 0.5rem;"></i> Insert Verification Link Button
                 </button>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
-                    This inserts a button that will be tracked when clicked.
-                </p>
             </div>
         </div>
 
@@ -105,11 +113,7 @@
 
     function insertTrackingLink() {
         const range = quill.getSelection(true);
-        // Insert a button-like link
-        quill.insertEmbed(range.index, 'html', '<a href="{{ tracking_link }}" style="display: inline-block; padding: 10px 20px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email</a>');
-        // Note: Quill generic HTML embed might be tricky. A standardized text replacement is safer for v1.
-        // Let's just insert text for now and handle it on backend or use a simple link.
-
+        // Standardized placeholder
         quill.insertText(range.index, ' [VERIFY_BUTTON] ', 'bold', true);
     }
 
@@ -117,6 +121,71 @@
         // Put HTML into hidden input
         document.querySelector('#body_content').value = quill.root.innerHTML;
     }
+
+    // --- File Handling Logic ---
+
+    function handleDrop(e) {
+        e.preventDefault();
+        document.getElementById('drop-zone').classList.remove('dragover');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const fileInput = document.getElementById('file-input');
+            fileInput.files = files; // Set the file input files
+            handleFileSelect(fileInput);
+        }
+    }
+
+    function handleFileSelect(input) {
+        const file = input.files[0];
+        const fileNameDisplay = document.getElementById('file-name');
+        const mappingSection = document.getElementById('mapping-section');
+        const errorDisplay = document.getElementById('upload-error');
+        const columnSelect = document.getElementById('email-column-select');
+
+        // Reset UI
+        fileNameDisplay.textContent = '';
+        mappingSection.style.display = 'none';
+        errorDisplay.style.display = 'none';
+        errorDisplay.textContent = '';
+        columnSelect.innerHTML = '<option value="" disabled selected>Select a column...</option>';
+
+        if (!file) return;
+
+        fileNameDisplay.textContent = file.name;
+
+        // Prepare FormData
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Fetch Columns
+        fetch('/api/get-columns', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    errorDisplay.textContent = data.error;
+                    errorDisplay.style.display = 'block';
+                    input.value = ''; // clear input
+                } else {
+                    // Populate Dropdown
+                    data.columns.forEach(col => {
+                        const option = document.createElement('option');
+                        option.value = col;
+                        option.textContent = col;
+                        columnSelect.appendChild(option);
+                    });
+                    // Show mapping section
+                    mappingSection.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                errorDisplay.textContent = 'An error occurred while analyzing the file.';
+                errorDisplay.style.display = 'block';
+            });
+    }
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 {% endblock %}

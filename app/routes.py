@@ -1,9 +1,27 @@
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash, session, jsonify
 from flask import current_app as app
 from . import db
 from .models import Campaign, Recipient, TrackingEvent
-from .utils import parse_recipient_file
+from .utils import parse_recipient_file, get_file_headers
 import os
+
+@app.route('/api/get-columns', methods=['POST'])
+def get_columns():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    try:
+        columns, error = get_file_headers(file)
+        if error:
+            return jsonify({'error': error}), 400
+            
+        return jsonify({'columns': columns})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def home():
