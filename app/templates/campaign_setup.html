@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="padding: 2rem; max-width: 900px; margin: 0 auto;">
+    <h1>Create Campaign</h1>
+
+    <form id="campaign-form" method="POST" action="{{ url_for('create_campaign') }}" enctype="multipart/form-data">
+        <!-- Step 1: List Upload -->
+        <div style="margin-bottom: 3rem;">
+            <h3 style="margin-bottom: 1rem; color: var(--primary);">1. Recipients</h3>
+
+            <div id="drop-zone" class="upload-zone">
+                <i class="fa-solid fa-cloud-arrow-up"
+                    style="font-size: 2rem; margin-bottom: 1rem; color: var(--text-muted);"></i>
+                <p>Drag & Drop your CSV/Excel file here</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.5rem 0;">or</p>
+                <button type="button" class="btn btn-secondary"
+                    onclick="document.getElementById('file-input').click()">Browse Files</button>
+                <input type="file" id="file-input" name="recipient_file" accept=".csv, .xlsx" style="display: none;"
+                    onchange="handleFileSelect(this)">
+                <div id="file-info"
+                    style="display: none; margin-top: 1rem; align-items: center; justify-content: center; gap: 1rem; background: rgba(0,0,0,0.03); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                    <span id="file-name-text" style="font-weight: 600; color: var(--primary);"></span>
+                    <button type="button" onclick="clearFileSelection()"
+                        style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center;"
+                        title="Remove file">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Column Selection Area -->
+            <div id="column-selection" style="margin-top: 1rem; display: none;">
+                <h4>Map Columns</h4>
+
+                <!-- CSV Select Mode -->
+                <div id="csv-mode" style="display: none;">
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">Select the column that contains email
+                        addresses:</p>
+                    <select name="email_column_select" id="email-column-select"
+                        style="margin-top: 0.5rem; max-width: 300px;">
+                        <!-- Populated by JS -->
+                    </select>
+
+                    <div
+                        style="overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+                        <table id="preview-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                            <!-- Populated by JS -->
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Excel/Manual Mode -->
+                <div id="excel-mode" style="display: none;">
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">
+                        Preview is not available for Excel files. Please enter the exact name of the column containing
+                        emails:
+                    </p>
+                    <input type="text" name="email_column_text" id="email-column-text" placeholder="e.g. Email"
+                        style="margin-top: 0.5rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; max-width: 300px;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Message Composition -->
+        <div style="margin-bottom: 3rem;">
+            <h3 style="margin-bottom: 1rem; color: var(--primary);">2. Message</h3>
+
+            <div class="form-group">
+                <label for="campaign_name">Campaign Name (Internal)</label>
+                <input type="text" id="campaign_name" name="campaign_name" required
+                    placeholder="e.g. December Newsletter">
+            </div>
+
+            <div class="form-group">
+                <label for="subject">Subject Line</label>
+                <input type="text" id="subject" name="subject" required placeholder="e.g. Special Offer Just for You!">
+            </div>
+
+            <div class="form-group">
+                <label>Message Body</label>
+                <div
+                    style="background: white; color: black; border-radius: 8px; overflow: hidden; border: 2px solid #94a3b8;">
+                    <div id="editor" style="height: 300px;"></div>
+                </div>
+                <input type="hidden" name="body_content" id="body_content">
+            </div>
+
+            <div class="form-group">
+                <button type="button" class="btn btn-secondary" style="font-size: 0.9rem;"
+                    onclick="insertTrackingLink()">
+                    <i class="fa-solid fa-link" style="margin-right: 0.5rem;"></i> Insert Verification Link Button
+                </button>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    This inserts a button that will be tracked when clicked.
+                </p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div
+            style="display: flex; justify-content: flex-end; gap: 1rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" onclick="prepareForm()">Review Campaign</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+    // Initialize Quill
+    var quill = new Quill('#editor', {
+        theme: 'snow',
+        placeholder: 'Compose your message...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                [{ 'header': [1, 2, 3, false] }],
+                ['link', 'clean']
+            ]
+        }
+    });
+
+    function insertTrackingLink() {
+        const range = quill.getSelection(true);
+        // Insert a button-like link
+        quill.insertEmbed(range.index, 'html', '<a href="{{ tracking_link }}" style="display: inline-block; padding: 10px 20px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email</a>');
+        // Note: Quill generic HTML embed might be tricky. A standardized text replacement is safer for v1.
+        // Let's just insert text for now and handle it on backend or use a simple link.
+
+        quill.insertText(range.index, ' [VERIFY_BUTTON] ', 'bold', true);
+    }
+
+    function prepareForm() {
+        // Put HTML into hidden input
+        document.querySelector('#body_content').value = quill.root.innerHTML;
+    }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+{% endblock %}

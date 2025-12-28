@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+    <h1>Review Campaign</h1>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">Please review the details before starting the campaign.
+    </p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div>
+            <h4 style="color: var(--primary);">Sender</h4>
+            <p>{{ session.get('sender_email') }}</p>
+        </div>
+        <div>
+            <h4 style="color: var(--primary);">Recipients</h4>
+            <p style="font-size: 1.25rem; font-weight: bold;">{{ campaign.total_recipients }}</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Loaded from file</p>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+        <h4 style="color: var(--primary);">Subject Line</h4>
+        <p style="font-size: 1.1rem;">{{ campaign.subject }}</p>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+        <h4 style="color: var(--primary);">Message Preview</h4>
+        <div
+            style="background: white; color: black; padding: 1.5rem; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+            {{ campaign.body_content | safe }}
+        </div>
+    </div>
+
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; padding-top: 2rem; border-top: 1px solid var(--border);">
+        <a href="{{ url_for('delete_campaign', campaign_id=campaign.id) }}" class="btn btn-secondary"
+            style="color: var(--danger); border-color: var(--danger);">
+            Discard
+        </a>
+        <div style="display: flex; gap: 1rem;">
+            <!-- Ideally Go Back would edit, but for simplicity we rely on new or discard -->
+            <form action="{{ url_for('start_campaign', campaign_id=campaign.id) }}" method="POST">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane" style="margin-right: 0.5rem;"></i> Start Sending
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
