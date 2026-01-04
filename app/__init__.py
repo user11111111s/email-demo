@@ -22,4 +22,23 @@ def create_app():
         # Create database tables
         db.create_all()
 
+        # Ensure database has expected columns for existing installations.
+        # Older databases may lack new columns added to the Campaign model.
+        try:
+            # Get column names for campaign table
+            with db.engine.begin() as conn:
+                result = conn.execute(db.text("PRAGMA table_info(campaign)"))
+                cols = [row[1] for row in result.fetchall()]
+                
+                # Check and add missing columns
+                if 'scheduled_at' not in cols:
+                    conn.execute(db.text("ALTER TABLE campaign ADD COLUMN scheduled_at DATETIME"))
+                if 'sender_email' not in cols:
+                    conn.execute(db.text("ALTER TABLE campaign ADD COLUMN sender_email VARCHAR(120)"))
+                if 'sender_password' not in cols:
+                    conn.execute(db.text("ALTER TABLE campaign ADD COLUMN sender_password VARCHAR(255)"))
+        except Exception:
+            # If anything goes wrong, skip silently; app can still run.
+            pass
+
     return app
