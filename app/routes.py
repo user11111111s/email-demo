@@ -84,20 +84,24 @@ def create_campaign():
     # Check both inputs (Select for CSV, Text for Excel)
     email_column = request.form.get('email_column_select') or request.form.get('email_column_text')
     
+    # Optional: Get name and DOB column names
+    name_column = request.form.get('name_column_select') or request.form.get('name_column_text')
+    dob_column = request.form.get('dob_column_select') or request.form.get('dob_column_text')
+    
     file = request.files.get('recipient_file')
     
     if not file or not email_column:
         flash('Please upload a file and specify the email column.', 'danger')
         return redirect(url_for('new_campaign'))
 
-    # Parse File
-    emails, error = parse_recipient_file(file, email_column)
+    # Parse File with optional name and DOB columns
+    recipients_data, error = parse_recipient_file(file, email_column, name_column, dob_column)
     
     if error:
         flash(f'Error parsing file: {error}', 'danger')
         return redirect(url_for('new_campaign'))
         
-    if not emails:
+    if not recipients_data:
         flash('No valid emails found in the selected column.', 'warning')
         return redirect(url_for('new_campaign'))
 
@@ -119,8 +123,17 @@ def create_campaign():
     db.session.add(campaign)
     db.session.commit()
     
-    # Create Recipients
-    recipients = [Recipient(campaign_id=campaign.id, email=email) for email in emails]
+    # Create Recipients with email, name, and dob (if available)
+    recipients = []
+    for recipient_data in recipients_data:
+        recipient = Recipient(
+            campaign_id=campaign.id,
+            email=recipient_data['email'],
+            name=recipient_data.get('name'),
+            dob=recipient_data.get('dob')
+        )
+        recipients.append(recipient)
+    
     db.session.add_all(recipients)
     db.session.commit()
     

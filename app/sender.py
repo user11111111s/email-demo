@@ -93,3 +93,55 @@ def start_sending_thread(app, campaign_id, sender_email, sender_password):
     thread = threading.Thread(target=send_async, args=(app, campaign_id, sender_email, sender_password))
     thread.daemon = True
     thread.start()
+
+def send_birthday_email(recipient, sender_email, sender_password):
+    """
+    Send a birthday email to a single recipient.
+    Reuses SMTP logic from the existing campaign sender.
+    
+    Args:
+        recipient: Recipient model instance with email, name, and dob
+        sender_email: Email address to send from
+        sender_password: Password for the sender email
+        
+    Returns:
+        True if email sent successfully, False otherwise
+    """
+    try:
+        # Load birthday email template
+        import os
+        from flask import current_app
+        
+        template_path = os.path.join(current_app.root_path, '..', 'templates', 'birthday_email.html')
+        
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template_content = f.read()
+        
+        # Replace {{ name }} placeholder with recipient's name or "Friend" if no name
+        recipient_name = recipient.name if recipient.name else "Friend"
+        email_body = template_content.replace('{{ name }}', recipient_name)
+        
+        # Connect to SMTP server
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        
+        # Create email message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f"🎉 Happy Birthday {recipient_name}!"
+        msg['From'] = sender_email
+        msg['To'] = recipient.email
+        
+        # Attach HTML body
+        msg.attach(MIMEText(email_body, 'html'))
+        
+        # Send email
+        server.sendmail(sender_email, recipient.email, msg.as_string())
+        server.quit()
+        
+        return True
+        
+    except Exception as e:
+        print(f"Failed to send birthday email to {recipient.email}: {e}")
+        return False
+

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from app import db
 
 class Campaign(db.Model):
@@ -32,6 +32,8 @@ class Recipient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
     email = db.Column(db.String(120), nullable=False)
+    name = db.Column(db.String(100), nullable=True)  # Recipient name for personalization
+    dob = db.Column(db.Date, nullable=True)  # Date of birth for birthday wishes
     status = db.Column(db.String(20), default='Pending')  # Pending, Sent, Failed, Bounced
     sent_at = db.Column(db.DateTime, nullable=True)
     

@@ -39,12 +39,25 @@
 
                 <!-- CSV Select Mode -->
                 <div id="csv-mode" style="display: none;">
-                    <p style="font-size: 0.9rem; color: var(--text-muted);">Select the column that contains email
-                        addresses:</p>
-                    <select name="email_column_select" id="email-column-select"
-                        style="margin-top: 0.5rem; max-width: 300px;">
-                        <!-- Populated by JS -->
-                    </select>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">Enter the exact name of the column containing emails:</p>
+                    <input type="text" name="email_column_select" id="email-column-select" placeholder="e.g. email or Email"
+                        style="margin-top: 0.5rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; max-width: 300px;">
+
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;">
+                        <strong>Optional:</strong> Enter column names for name and birthday data:
+                    </p>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <label for="name-column-select" style="font-size: 0.85rem; color: var(--text-muted);">Name Column (Optional)</label>
+                            <input type="text" name="name_column_select" id="name-column-select" placeholder="e.g. name or Full Name"
+                                style="margin-top: 0.25rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <label for="dob-column-select" style="font-size: 0.85rem; color: var(--text-muted);">Date of Birth Column (Optional)</label>
+                            <input type="text" name="dob_column_select" id="dob-column-select" placeholder="e.g. dob or Birthday"
+                                style="margin-top: 0.25rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                        </div>
+                    </div>
 
                     <div
                         style="overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 8px;">
@@ -62,6 +75,22 @@
                     </p>
                     <input type="text" name="email_column_text" id="email-column-text" placeholder="e.g. Email"
                         style="margin-top: 0.5rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: 100%; max-width: 300px;">
+                    
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;">
+                        <strong>Optional:</strong> Enter column names for name and birthday data:
+                    </p>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <label for="name-column-text" style="font-size: 0.85rem; color: var(--text-muted);">Name Column (Optional)</label>
+                            <input type="text" name="name_column_text" id="name-column-text" placeholder="e.g. Name or Full Name"
+                                style="margin-top: 0.25rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <label for="dob-column-text" style="font-size: 0.85rem; color: var(--text-muted);">Date of Birth Column (Optional)</label>
+                            <input type="text" name="dob_column_text" id="dob-column-text" placeholder="e.g. DOB or Birthday"
+                                style="margin-top: 0.25rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

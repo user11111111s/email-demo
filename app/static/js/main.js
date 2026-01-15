@@ -10,6 +10,8 @@ const excelMode = document.getElementById('excel-mode');
 const previewTable = document.getElementById('preview-table');
 const emailColumnSelect = document.getElementById('email-column-select');
 const emailColumnText = document.getElementById('email-column-text');
+const nameColumnSelect = document.getElementById('name-column-select');
+const dobColumnSelect = document.getElementById('dob-column-select');
 
 if (dropZone) {
     dropZone.addEventListener('dragover', (e) => {
@@ -42,7 +44,7 @@ function handleFileSelect(input) {
         if (file.name.endsWith('.csv')) {
             csvMode.style.display = 'block';
             excelMode.style.display = 'none';
-            // Enable select, disable text
+            // Enable CSV inputs, disable Excel text
             emailColumnSelect.required = true;
             emailColumnText.required = false;
             emailColumnText.value = '';
@@ -52,12 +54,14 @@ function handleFileSelect(input) {
             // Excel or other: Show Manual Input
             csvMode.style.display = 'none';
             excelMode.style.display = 'block';
-            // Disable select, enable text
+            // Disable CSV inputs, enable Excel text
             emailColumnSelect.required = false;
             emailColumnText.required = true;
 
-            // Clear previous select options if any? Not strictly necessary but good cleanup
-            emailColumnSelect.innerHTML = '';
+            // Clear previous values
+            emailColumnSelect.value = '';
+            nameColumnSelect.value = '';
+            dobColumnSelect.value = '';
         }
     }
 }
@@ -84,18 +88,26 @@ function parseCSV(file) {
 }
 
 function renderPreview(data, headers) {
-    // Populate Select
-    emailColumnSelect.innerHTML = '';
-    headers.forEach(header => {
-        const option = document.createElement('option');
-        option.value = header;
-        option.textContent = header;
-        // Auto-select if contains "email"
-        if (header.toLowerCase().includes('email')) {
-            option.selected = true;
-        }
-        emailColumnSelect.appendChild(option);
+    // Auto-fill Email input
+    const emailHeader = headers.find(h => h.toLowerCase().includes('email'));
+    if (emailHeader) {
+        emailColumnSelect.value = emailHeader;
+    }
+
+    // Auto-fill Name input (optional)
+    const nameHeader = headers.find(h => h.toLowerCase().includes('name'));
+    if (nameHeader) {
+        nameColumnSelect.value = nameHeader;
+    }
+
+    // Auto-fill DOB input (optional)
+    const dobHeader = headers.find(h => {
+        const lower = h.toLowerCase();
+        return lower.includes('dob') || lower.includes('birth') || lower.includes('birthday');
     });
+    if (dobHeader) {
+        dobColumnSelect.value = dobHeader;
+    }
 
     // Populate Table
     let tableHtml = '<thead><tr>';
