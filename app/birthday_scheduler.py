@@ -57,8 +57,8 @@ def check_and_send_birthday_emails():
         skipped_count = 0
         
         for recipient in birthday_recipients:
-            # Check if birthday email was already sent this year
-            if already_sent_this_year(recipient.id, current_year):
+            # Check if birthday email was already sent this year to this EMAIL
+            if already_sent_this_year_to_email(recipient.email, current_year):
                 print(f"⏭️  Skipped {recipient.email} - already sent this year")
                 skipped_count += 1
                 continue
@@ -67,8 +67,8 @@ def check_and_send_birthday_emails():
             success = send_birthday_email(recipient, sender_email, sender_password)
             
             if success:
-                # Log the birthday_sent event
-                log_birthday_sent(recipient.id, current_year)
+                # Log the birthday_sent event for this email
+                log_birthday_sent_for_email(recipient.id, recipient.email, current_year)
                 sent_count += 1
                 print(f"✅ Sent birthday email to {recipient.email} ({recipient.name or 'Friend'})")
             else:
@@ -82,23 +82,25 @@ def check_and_send_birthday_emails():
         import traceback
         traceback.print_exc()
 
-def already_sent_this_year(recipient_id, year):
+def already_sent_this_year_to_email(email, year):
     """
-    Check if a birthday email was already sent to this recipient this year.
+    Check if a birthday email was already sent to this EMAIL ADDRESS this year.
+    This prevents duplicate sends when the same email exists in multiple campaigns.
     
     Args:
-        recipient_id: ID of the recipient
+        email: Email address to check
         year: Year to check for
         
     Returns:
         True if already sent this year, False otherwise
     """
-    # Check for a birthday_sent event this year
+    # Check for a birthday_sent event this year for ANY recipient with this email
     year_start = datetime(year, 1, 1)
     year_end = datetime(year, 12, 31, 23, 59, 59)
     
-    event = TrackingEvent.query.filter(
-        TrackingEvent.recipient_id == recipient_id,
+    # Join TrackingEvent with Recipient to check by email
+    event = db.session.query(TrackingEvent).join(Recipient).filter(
+        Recipient.email == email,
         TrackingEvent.type == 'birthday_sent',
         TrackingEvent.timestamp >= year_start,
         TrackingEvent.timestamp <= year_end
@@ -106,12 +108,14 @@ def already_sent_this_year(recipient_id, year):
     
     return event is not None
 
-def log_birthday_sent(recipient_id, year):
+def log_birthday_sent_for_email(recipient_id, email, year):
     """
     Log that a birthday email was sent to prevent duplicate sends.
+    Records the event for the recipient_id, but the check uses email.
     
     Args:
-        recipient_id: ID of the recipient
+        recipient_id: ID of the recipient (for the foreign key)
+        email: Email address that received the birthday wish
         year: Year the email was sent
     """
     event = TrackingEvent(

@@ -76,15 +76,20 @@ def setup_scheduler(app):
         from .birthday_scheduler import check_and_send_birthday_emails
         
         # Create background scheduler
+        
+        # PREVENT DOUBLE RUN: only start scheduler in the reloader process (not the main process)
+        # Flask reloader spawns a child process. We want the scheduler ONLY in that child process.
+        if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+            return
+
         scheduler = BackgroundScheduler(daemon=True)
         
         # Schedule daily birthday check at 00:05 (5 minutes after midnight)
-        # TEMP: Changed to 22:45 for testing .env file (normally hour=0, minute=5)
         scheduler.add_job(
             func=lambda: check_and_send_birthday_emails_wrapper(app),
             trigger='cron',
-            hour=22,
-            minute=49,
+            hour=10,
+            minute=17,
             id='birthday_check',
             name='Daily Birthday Check',
             replace_existing=True
@@ -93,7 +98,7 @@ def setup_scheduler(app):
         # Start the scheduler
         scheduler.start()
         
-        print(f"✅ Birthday scheduler started - test mode: checks at 22:45 (normally 00:05)")
+        print(f"✅ Birthday scheduler started - daily checks at 00:05")
         
         # Shut down the scheduler when exiting the app
         atexit.register(lambda: scheduler.shutdown() if scheduler else None)
