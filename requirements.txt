@@ -7,5 +7,5 @@ flask-sqlalchemy
 pandas
 openpyxl
 APScheduler
-
+gunicorn
 

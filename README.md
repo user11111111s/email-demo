@@ -1,271 +1,102 @@
-# Automated Email Dispatch System  
-A backend system for sending dynamic, personalized emails using Flask, Jinja2 templates, and SendGrid.
+# Email Automation System
 
-This project demonstrates core components of an automated email delivery system, including template rendering, API-based sending, and environment-driven configuration.  
-It is designed for team development using proper Git workflows.
+Email campaign management system with automated birthday wishes.
 
----
+## Features
 
-## 1. Features Implemented 
+- 📧 Email campaign creation and management
+- 📊 Campaign analytics (opens, replies)
+- 🎂 Automated birthday wishes
+- 📁 CSV/Excel recipient upload
+- ⏰ Scheduled campaigns
+- 📈 Export reports
 
-- `/ping` endpoint for server health check  
-- `/send-email` POST endpoint for sending personalized emails  
-- HTML email templating using Jinja2  
-- SendGrid email integration using API Key  
-- Returns SendGrid `message_id` for tracking  
-- Clean, modular project structure  
-- Environment variable support using `.env`  
-- Git branching workflow (feature-branches)
+## Deployment on Render
 
----
+### Quick Deploy
 
-## 2. Project Structure
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-```
+### Manual Deployment
 
-email-demo/
-│
-├── app.py                     # Main Flask application
-├── requirements.txt           # Python dependencies
-├── .env.example               # Template for environment variables (no secrets)
-│
-├── templates/
-│   └── email_template.html    # HTML email template
-│
-└── README.md                  # Project documentation
+1. **Fork/Clone this repository**
 
-```
+2. **Sign up for Render**
+   - Go to https://render.com
+   - Sign up with GitHub
 
----
+3. **Create New Web Service**
+   - Click "New" → "Web Service"
+   - Connect your GitHub repository
+   - Configure:
+     - **Name:** `email-demo` (or your preferred name)
+     - **Environment:** Python 3
+     - **Build Command:** `pip install -r requirements.txt`
+     - **Start Command:** `gunicorn run:app`
+     - **Instance Type:** Free
 
-## 3. Setup Instructions
+4. **Add Disk for Database**
+   - In Advanced settings
+   - Add Disk:
+     - **Name:** `email-demo-db`
+     - **Mount Path:** `/opt/render/project/src/instance`
+     - **Size:** 1 GB
 
-### Step 1: Clone the repository
-```
+5. **Set Environment Variables**
+   ```
+   BIRTHDAY_SENDER_EMAIL=your_email@gmail.com
+   BIRTHDAY_SENDER_PASSWORD=your_app_password
+   CRON_SECRET=generate_random_secret
+   USE_INTERNAL_SCHEDULER=false
+   ```
 
-git clone <your_repository_url>
-cd email-demo
+6. **Deploy!**
+   - Click "Create Web Service"
+   - Wait for deployment (2-3 minutes)
 
-```
+### Set Up Cron Job
 
-### Step 2: Create and activate a virtual environment
+After deployment, set up external cron at https://cron-job.org:
+- **URL:** `https://your-app.onrender.com/cron/birthday-check?key=YOUR_CRON_SECRET`
+- **Schedule:** Daily at 00:05
 
-PowerShell:
-```
+## Local Development
 
-python -m venv venv
-venv\Scripts\Activate.ps1
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```
+2. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your credentials
+   ```
 
-CMD:
-```
+3. **Run the app:**
+   ```bash
+   python run.py
+   ```
 
-python -m venv venv
-venv\Scripts\activate
+4. **Access:** http://127.0.0.1:5000
 
-```
+## Environment Variables
 
-### Step 3: Install dependencies
-```
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `BIRTHDAY_SENDER_EMAIL` | Gmail address for sending | Yes |
+| `BIRTHDAY_SENDER_PASSWORD` | Gmail app password | Yes |
+| `CRON_SECRET` | Secret key for cron endpoint | Yes (production) |
+| `USE_INTERNAL_SCHEDULER` | Use APScheduler (`true`/`false`) | No (default: `true`) |
 
-pip install -r requirements.txt
+## Tech Stack
 
-```
+- **Backend:** Flask, SQLAlchemy
+- **Database:** SQLite
+- **Email:** SMTP (Gmail)
+- **Scheduler:** APScheduler (local) / External cron (production)
+- **Frontend:** HTML, CSS, JavaScript
 
-### Step 4: Create your `.env` file  
-Create a new file named `.env` in the project root with the following:
+## License
 
-```
-
-SENDGRID_API_KEY=your_sendgrid_api_key_here
-SENDER_EMAIL=your_verified_sender_email_here
-FLASK_APP=app.py
-
-```
-
-Note: The sender email must be verified in your SendGrid dashboard.
-
----
-
-## 4. Running the Server
-
-PowerShell:
-```
-
-venv\Scripts\Activate.ps1
-python -m flask run
-
-```
-
-CMD:
-```
-
-venv\Scripts\activate
-python -m flask run
-
-```
-
-The server will start on:
-```
-
-[http://127.0.0.1:5000](http://127.0.0.1:5000)
-
-```
-
----
-
-## 5. API Endpoints
-
-### 5.1 Health Check  
-```
-
-GET /ping
-
-````
-
-Example response:
-```json
-{
-  "message": "Server is running!"
-}
-````
-
----
-
-### 5.2 Send Personalized Email
-
-```
-POST /send-email
-```
-
-#### Request JSON:
-
-```json
-{
-  "email": "recipient@example.com",
-  "name": "User Name"
-}
-```
-
-#### Example CURL (run in CMD):
-
-```
-curl -X POST http://127.0.0.1:5000/send-email -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"name\":\"User\"}"
-```
-
-#### Expected Response:
-
-```json
-{
-  "message": "Email accepted",
-  "status": 202,
-  "provider_message_id": "sendgrid-message-id"
-}
-```
-
----
-
-## 6. Email Template
-
-The email HTML template is stored in:
-
-```
-templates/email_template.html
-```
-
-Example template:
-
-```html
-<!DOCTYPE html>
-<html>
-<body>
-    <h2>Hello {{ name }}!</h2>
-    <p>This is your personalized email generated by our automated system.</p>
-</body>
-</html>
-```
-
-Jinja automatically replaces `{{ name }}` with the value provided in the POST request.
-
----
-
-## 7. Development Workflow (Team Guidelines)
-
-This project uses a professional Git workflow.
-
-### Creating a new feature branch:
-
-```
-git checkout -b feat/send-email
-```
-
-Other example branches:
-
-```
-feat/bulk-send
-feat/webhook
-feat/dashboard
-```
-
-### After completing work:
-
-```
-git add .
-git commit -m "Implemented email sending functionality"
-git push origin feat/send-email
-```
-
-### Merge process:
-
-1. Open a Pull Request (PR) on GitHub
-2. Request team review if needed
-3. Merge into `main` once approved
-
-This keeps the main branch stable and prevents conflicts.
-
----
-
-## 8. Next Phase (Future Features)
-
-### Bulk Email Sending
-
-* CSV upload
-* Loop sending
-* Per-email logging
-* Rate limit handling
-
-### Webhook Integration
-
-* Delivery events
-* Bounce tracking
-* Drop and spam reporting
-* Open and click events
-
-### Database Logging
-
-* Store message ID, recipient, timestamp, status
-* Query logs in dashboard
-
-### Dashboard UI
-
-* View all email logs
-* Filter by status
-* Search by email or name
-
----
-
-## 9. Contributors
-
-* Miguel (Lead Developer)
-* Additional team members can be added here.
-
----
-
-## 10. Notes
-
-* Do not commit your `.env` file.
-* Use `.env.example` for sharing environment variable format.
-* Keep feature branches small and focused.
-
-```
+MIT

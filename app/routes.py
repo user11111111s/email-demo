@@ -346,3 +346,47 @@ def export_report():
         as_attachment=True,
         download_name=filename
     )
+
+# --- Cron Endpoint for Birthday Automation ---
+
+@app.route('/cron/birthday-check')
+def cron_birthday_check():
+    """
+    Cron endpoint for external services to trigger birthday checks.
+    
+    This endpoint allows external cron services (cron-job.org, GitHub Actions, Render cron, etc.)
+    to trigger birthday email automation without requiring APScheduler to run 24/7.
+    
+    Security: Requires CRON_SECRET environment variable as query parameter 'key'.
+    
+    Usage:
+        curl "https://yourapp.com/cron/birthday-check?key=YOUR_CRON_SECRET"
+    
+    Returns:
+        JSON with status and message
+    """
+    # Validate secret key for security
+    provided_key = request.args.get('key')
+    expected_secret = os.environ.get('CRON_SECRET')
+    
+    if not expected_secret:
+        return {'error': 'CRON_SECRET not configured on server'}, 500
+    
+    if not provided_key or provided_key != expected_secret:
+        return {'error': 'unauthorized'}, 403
+    
+    # Execute birthday logic (app context is already available in Flask request)
+    from .birthday_scheduler import check_and_send_birthday_emails
+    
+    try:
+        check_and_send_birthday_emails()
+        return {
+            'status': 'ok',
+            'message': 'Birthday check executed successfully'
+        }, 200
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'Birthday check failed: {str(e)}'
+        }, 500
+

@@ -1,0 +1,22 @@
+services:
+  # Web Service
+  - type: web
+    name: email-demo
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app
+    envVars:
+      - key: BIRTHDAY_SENDER_EMAIL
+        sync: false
+      - key: BIRTHDAY_SENDER_PASSWORD
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+      - key: USE_INTERNAL_SCHEDULER
+        value: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    disk:
+      name: email-demo-db
+      mountPath: /opt/render/project/src/instance
+      sizeGB: 1

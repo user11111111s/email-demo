@@ -55,8 +55,13 @@ def create_app():
             # If anything goes wrong, skip silently; app can still run.
             pass
     
-    # Setup APScheduler for automatic birthday wishes
-    setup_scheduler(app)
+    # Setup APScheduler for automatic birthday wishes (optional - can use external cron instead)
+    # Set USE_INTERNAL_SCHEDULER=false in production to use external cron services
+    if os.environ.get('USE_INTERNAL_SCHEDULER', 'true').lower() == 'true':
+        setup_scheduler(app)
+    else:
+        print("⚠️  Internal scheduler disabled - use external cron (e.g., /cron/birthday-check)")
+
 
     return app
 
