@@ -6,10 +6,96 @@ from flask import current_app
 from .models import db, Campaign, Recipient
 from datetime import datetime
 import time
+import os
+
+def send_campaign_sync(campaign_id, sender_email, sender_password):
+    """
+    Send emails synchronously - works reliably with Gunicorn in production.
+    This function blocks until all emails are sent, but guarantees delivery.
+    """
+    campaign = Campaign.query.get(campaign_id)
+    if not campaign:
+        return
+    
+    recipients = Recipient.query.filter_by(campaign_id=campaign_id, status='Pending').all()
+    
+    # Determine base URL based on environment
+    if os.getenv('FLASK_ENV') == 'production':
+        # In production, try to get the public URL from Render environment
+        render_external_url = os.getenv('RENDER_EXTERNAL_URL')
+        base_url = render_external_url if render_external_url else "https://your-app.onrender.com"
+    else:
+        base_url = "http://127.0.0.1:5002"
+    
+    try:
+        # Connect to SMTP
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        
+        sent_in_batch = 0
+        for i, r in enumerate(recipients):
+            try:
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = campaign.subject
+                msg['From'] = sender_email
+                msg['To'] = r.email
+
+                # Construct Body with Tracking
+                tracking_pixel = f'<img src="{base_url}/track/open/{r.id}" width="1" height="1" style="display:none;" />'
+                click_link = f"{base_url}/track/replied/{r.id}"
+                
+                body = campaign.body_content
+                
+                btn_html = f'''
+                <a href="{click_link}" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-family: sans-serif;">
+                    Verify Email
+                </a>
+                '''
+                
+                if '[VERIFY_BUTTON]' in body:
+                    body = body.replace('[VERIFY_BUTTON]', btn_html)
+                
+                body = body.replace('{{ tracking_link }}', click_link)
+                final_html = f"<html><body>{body}<br>{tracking_pixel}</body></html>"
+
+                msg.attach(MIMEText(final_html, 'html'))
+                server.sendmail(sender_email, r.email, msg.as_string())
+                
+                r.status = 'Sent'
+                r.sent_at = datetime.now()
+                db.session.commit()
+                
+                sent_in_batch += 1
+                time.sleep(1)  # Rate limiting
+                
+                # Batch delay logic
+                if sent_in_batch >= campaign.batch_size and (i + 1) < len(recipients):
+                    print(f"Batch limit reached. Pausing for {campaign.batch_delay} minutes.")
+                    time.sleep(campaign.batch_delay * 60)
+                    sent_in_batch = 0
+
+            except Exception as e:
+                print(f"Failed to send to {r.email}: {e}")
+                r.status = 'Failed'
+                db.session.commit()
+
+        campaign.status = 'Completed'
+        db.session.commit()
+        server.quit()
+        
+    except Exception as e:
+        error_msg = f"SMTP Error for campaign {campaign_id}: {e}"
+        print(error_msg)
+        campaign.status = 'Failed'
+        db.session.commit()
+        raise  # Re-raise so caller knows it failed
 
 def send_async(app, campaign_id, sender_email, sender_password):
     """
     Background worker to send emails.
+    NOTE: This doesn't work reliably with Gunicorn in production.
+    Use send_campaign_sync() instead for production deployments.
     """
     with app.app_context():
         campaign = Campaign.query.get(campaign_id)

@@ -185,6 +185,7 @@ def review_campaign(campaign_id):
 @main_bp.route('/campaign/<int:campaign_id>/start', methods=['POST'])
 def start_campaign(campaign_id):
     from datetime import datetime
+    import os
     campaign = Campaign.query.get_or_404(campaign_id)
     
     sender_email = session.get('sender_email')
@@ -209,16 +210,23 @@ def start_campaign(campaign_id):
     campaign.status = 'Sending'
     db.session.commit()
     
-    # Start Background Sending
-    from .sender import start_sending_thread
+    # Detect environment
+    is_production = os.getenv('FLASK_ENV') == 'production'
+    
     try:
-        # Using current_app._get_current_object() to pass real app object to thread if needed
-        # But our sender just needs app factory or app_context. 
-        # Standard way: Pass app to thread.
-        start_sending_thread(current_app._get_current_object(), campaign_id, sender_email, sender_password)
-        flash('Campaign started! Emails are being dispatched in the background.', 'success')
+        if is_production:
+            # Production: Use synchronous sending (works with Gunicorn)
+            from .sender import send_campaign_sync
+            send_campaign_sync(campaign_id, sender_email, sender_password)
+            flash('Campaign completed! All emails have been sent.', 'success')
+        else:
+            # Development: Use threaded sending (faster for testing)
+            from .sender import start_sending_thread
+            start_sending_thread(current_app._get_current_object(), campaign_id, sender_email, sender_password)
+            flash('Campaign started! Emails are being dispatched in the background.', 'success')
+            
     except Exception as e:
-        flash(f'Error starting campaign: {e}', 'danger')
+        flash(f'Error sending campaign: {e}', 'danger')
         campaign.status = 'Draft'
         db.session.commit()
     
