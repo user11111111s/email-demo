@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="padding: 2rem;">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <a href="{{ url_for('main.campaign_detail', campaign_id=campaign.id) }}" class="btn btn-secondary"
+                style="margin-bottom: 1rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </a>
+            <h1>{{ campaign.name }}</h1>
+            <p style="color: var(--text-muted);">People Who Replied</p>
+            <span
+                style="display: inline-block; margin-top: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+                {{ replied_recipients|length }} replied
+            </span>
+        </div>
+    </div>
+
+    <!-- Replied Recipients Table -->
+    <div style="overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+        {% if replied_recipients %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: left; border-bottom: 1px solid var(--border); background: var(--glass);">
+                    <th style="padding: 1rem;">Email</th>
+                    <th style="padding: 1rem;">Status</th>
+                    <th style="padding: 1rem;">Sent Time</th>
+                    <th style="padding: 1rem;">Replied At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in replied_recipients %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 1rem;">{{ r.email }}</td>
+                    <td style="padding: 1rem;">
+                        <span style="
+                                padding: 0.25rem 0.5rem; 
+                                border-radius: 4px; 
+                                font-size: 0.85rem;
+                                background: rgba(16, 185, 129, 0.1);
+                                color: var(--success);
+                            ">
+                            {{ r.status }}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem;">{{ r.sent_at.strftime('%Y-%m-%d %H:%M:%S') if r.sent_at else '-' }}</td>
+                    <td style="padding: 1rem;">
+                        {% for e in r.events %}
+                        {% if e.type == 'replied' %}
+                        <span style="color: var(--success); font-weight: 500;">
+                            {{ e.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+            <p><i class="fa-regular fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i></p>
+            <p>No one has replied yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

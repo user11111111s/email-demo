@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+    <h1>Review Campaign</h1>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">Please review the details before starting the campaign.
+    </p>
+
+    <!-- Campaign Review Details -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div class="form-group">
+            <label>Campaign Name</label>
+            <div class="read-only-box">{{ campaign.name }}</div>
+        </div>
+        <div class="form-group">
+            <label>Subject</label>
+            <div class="read-only-box">{{ campaign.subject }}</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div>
+            <h4 style="color: var(--primary);">Sender</h4>
+            <p>{{ session.get('sender_email') }}</p>
+        </div>
+        <div>
+            <h4 style="color: var(--primary);">Recipients</h4>
+            <p style="font-size: 1.25rem; font-weight: bold;">{{ campaign.total_recipients }}</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Loaded from file</p>
+        </div>
+    </div>
+
+    <p style="font-size: 1.1rem;">{{ campaign.subject }}</p>
+</div>
+
+<div style="margin-bottom: 2rem;">
+    <h4 style="color: var(--primary);">Message Preview</h4>
+    <div
+        style="background: white; color: black; padding: 1.5rem; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+        {{ campaign.body_content | safe }}
+    </div>
+</div>
+
+{% if campaign.scheduled_at %}
+<div
+    style="margin-bottom: 2rem; padding: 1rem; background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--primary); border-radius: 4px;">
+    <h4 style="color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-clock"></i> Scheduled Send Time
+    </h4>
+    <p>{{ campaign.scheduled_at.strftime('%Y-%m-%d at %H:%M:%S') }}</p>
+</div>
+{% else %}
+<div
+    style="margin-bottom: 2rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--success); border-radius: 4px;">
+    <h4 style="color: var(--success); margin-bottom: 0.5rem;"><i class="fa-solid fa-lightning"></i> Send Immediately
+    </h4>
+    <p>This campaign will be sent right away when you start it.</p>
+</div>
+{% endif %}
+
+<div
+    style="display: flex; justify-content: space-between; align-items: center; padding-top: 2rem; border-top: 1px solid var(--border);">
+    <a href="{{ url_for('main.delete_campaign', campaign_id=campaign.id) }}" class="btn btn-secondary"
+        style="color: var(--danger); border-color: var(--danger);">
+        Discard
+    </a>
+    <div style="display: flex; gap: 1rem;">
+        <!-- Ideally Go Back would edit, but for simplicity we rely on new or discard -->
+        <form action="{{ url_for('main.start_campaign', campaign_id=campaign.id) }}" method="POST">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-paper-plane" style="margin-right: 0.5rem;"></i> Start Sending
+            </button>
+        </form>
+    </div>
+</div>
+</div>
+{% endblock %}

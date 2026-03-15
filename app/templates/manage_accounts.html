@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Manage Accounts</h1>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Usage Meter Summary -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        {% for account in accounts %}
+        <div class="glass-panel" style="padding: 1.5rem; border: 1px solid var(--border); background: rgba(255,255,255,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="margin: 0; color: var(--text-main);">{{ account.email }}</h3>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Sender Profile</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('main.test_account_connection', account_id=account.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;" title="Test Connection">
+                        <i class="fa-solid fa-plug"></i>
+                    </a>
+                    <a href="{{ url_for('main.delete_account', account_id=account.id) }}" class="btn btn-secondary" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="return confirm('Are you sure you want to delete this account?')" title="Delete Account">
+                        <i class="fa-solid fa-trash"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    <span>Daily Usage</span>
+                    <span style="font-weight: 600;">{{ account.daily_quota_used }} / 495</span>
+                </div>
+                <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                    <div style="height: 100%; width: {{ account.get_usage_percent() }}%; background: {% if account.get_usage_percent() > 90 %}#ef4444{% elif account.get_usage_percent() > 70 %}#f59e0b{% else %}#10b981{% endif %}; transition: width 0.5s ease;"></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <hr style="border: none; border-top: 1px solid var(--border); margin-bottom: 3rem;">
+
+    <!-- Add Account Form -->
+    <div style="max-width: 500px; margin: 0 auto;">
+        <h2 style="text-align: center; margin-bottom: 2rem;">Add New Sender Profile</h2>
+        <form method="POST" action="{{ url_for('main.add_account') }}" class="glass-panel" style="padding: 2rem; border: 1px solid var(--primary);">
+            <div class="form-group">
+                <label for="email">Gmail Address</label>
+                <input type="email" id="email" name="email" placeholder="sender@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">App Password</label>
+                <input type="password" id="password" name="password" placeholder="••••••••••••••••" required>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    <i class="fa-solid fa-circle-info"></i> Use a Google <a href="https://myaccount.google.com/apppasswords" target="_blank">App Password</a>.
+                </p>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                Add Sender Profile
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="padding: 2rem;">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary"
+                style="margin-bottom: 1rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </a>
+            <h1>{{ campaign.name }}</h1>
+            <p style="color: var(--text-muted);">Subject: {{ campaign.subject }}</p>
+            <span
+                style="display: inline-block; margin-top: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+                {{ campaign.status }}
+            </span>
+            {% if campaign.scheduled_at %}
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                <i class="fa-solid fa-clock"></i> Scheduled for: {{ campaign.scheduled_at.strftime('%Y-%m-%d %H:%M:%S')
+                }}
+            </p>
+            {% endif %}
+        </div>
+        <div style="text-align: right;">
+            <p style="color: var(--text-muted);">Created: {{ campaign.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="glass-panel" style="padding: 1.5rem; text-align: center; border-color: rgba(99, 102, 241, 0.3);">
+            <i class="fa-solid fa-users" style="color: var(--primary); font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+            <h3>{{ stats.total }}</h3>
+            <p style="color: var(--text-muted);">Total Recipients</p>
+        </div>
+        <div class="glass-panel" style="padding: 1.5rem; text-align: center; border-color: rgba(16, 185, 129, 0.3);">
+            <i class="fa-solid fa-check-circle"
+                style="color: var(--success); font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+            <h3>{{ stats.sent }}</h3>
+            <p style="color: var(--text-muted);">Succesfully Sent</p>
+        </div>
+        <!-- Opens removed — app focuses on replies only -->
+        <div class="glass-panel" style="padding: 1.5rem; text-align: center; border-color: rgba(245, 158, 11, 0.3);">
+            <i class="fa-solid fa-reply" style="color: #f59e0b; font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+            <h3>{{ stats.replied }}</h3>
+            <p style="color: var(--text-muted);">Replied</p>
+            {% if stats.replied > 0 %}
+            <a href="{{ url_for('main.campaign_replied', campaign_id=campaign.id) }}" class="btn btn-sm btn-primary"
+                style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; font-size: 0.75rem;">View All</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recipient Table -->
+    <h3>Recipient Details</h3>
+    <div style="overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="text-align: left; border-bottom: 1px solid var(--border); background: var(--glass);">
+                    <th style="padding: 1rem;">Email</th>
+                    <th style="padding: 1rem;">Status</th>
+                    <th style="padding: 1rem;">Sent Time</th>
+                    <th style="padding: 1rem;">Activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recipients %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 1rem;">{{ r.email }}</td>
+                    <td style="padding: 1rem;">
+                        <span style="
+                                padding: 0.25rem 0.5rem; 
+                                border-radius: 4px; 
+                                font-size: 0.85rem;
+                                background: {% if r.status == 'Sent' %}rgba(16, 185, 129, 0.1){% elif r.status == 'Failed' %}rgba(239, 68, 68, 0.1){% else %}rgba(148, 163, 184, 0.1){% endif %};
+                                color: {% if r.status == 'Sent' %}var(--success){% elif r.status == 'Failed' %}var(--danger){% else %}var(--text-muted){% endif %};
+                            ">
+                            {{ r.status }}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem;">{{ r.sent_at.strftime('%H:%M:%S') if r.sent_at else '-' }}</td>
+                    <td style="padding: 1rem;">
+                        {% if r.events %}
+                        {% for e in r.events %}
+                        {% if e.type == 'replied' %}
+                        <span style="margin-right: 0.5rem; font-size: 0.8rem; color: var(--text-main);">
+                            <i class="fa-solid fa-reply" title="replied at {{ e.timestamp.strftime('%H:%M') }}"></i>
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                        {% else %}
+                        <span style="color: var(--border);">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

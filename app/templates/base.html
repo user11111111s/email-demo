@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IEI Email Dispatcher</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Quill CSS for Editor, only if needed -->
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar glass-panel">
+        <a href="{{ url_for('main.dashboard') }}" class="brand">
+            <i class="fa-solid fa-paper-plane"></i> IEI Dispatcher
+        </a>
+        <div class="nav-links">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.dashboard') }}"
+                class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                <i class="fa-solid fa-chart-line"></i> Dashboard
+            </a>
+            <a href="{{ url_for('main.manage_accounts') }}"
+                class="nav-link {% if request.endpoint == 'main.manage_accounts' %}active{% endif %}">
+                <i class="fa-solid fa-users-gear"></i> Accounts
+            </a>
+            <a href="{{ url_for('main.logout') }}" class="nav-link">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </a>
+            {% else %}
+            <a href="{{ url_for('main.login') }}" class="nav-link {% if request.endpoint == 'main.login' %}active{% endif %}">
+                Login <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} animate-fade-in">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>
