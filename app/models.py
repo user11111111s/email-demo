@@ -101,4 +101,3 @@ class TrackingEvent(db.Model):
     recipient_id = db.Column(db.Integer, db.ForeignKey('recipient.id'), nullable=False)
     type = db.Column(db.String(20), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.now)
-

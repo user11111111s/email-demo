@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, session, Blueprint, current_app
 from flask_login import login_user, logout_user, login_required, current_user
-from . import db
+from markupsafe import escape
+from . import db, limiter
 from .models import User, Campaign, Recipient, TrackingEvent, SenderAccount
 from .utils import parse_recipient_file, parse_manual_emails, encrypt_password, decrypt_password
 import os
@@ -14,16 +15,51 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def home():
     if not current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return render_template('landing.html')
     return redirect(url_for('main.dashboard'))
 
+@main_bp.route('/signup', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
+def signup():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+        
+    if request.method == 'POST':
+        username = escape(request.form.get('email', '').strip())
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not username or not password or not confirm_password:
+            flash('All fields are required.', 'danger')
+            return redirect(url_for('main.signup'))
+
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return redirect(url_for('main.signup'))
+
+        if User.query.filter_by(username=username).first():
+            flash('Username/Email already exists. Please log in.', 'danger')
+            return redirect(url_for('main.login'))
+
+        user = User(username=username)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        login_user(user)
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('main.dashboard'))
+
+    return render_template('signup.html')
+
 @main_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
         
     if request.method == 'POST':
-        username = request.form.get('email') # Using email field as username for now
+        username = escape(request.form.get('email', '').strip()) # Using email field as username for now
         password = request.form.get('password')
 
         if not username or not password:
@@ -61,12 +97,13 @@ def dashboard():
         # Search by Name, Subject, or Recipient Email
         search_filter = f"%{query}%"
         campaigns = Campaign.query.outerjoin(Recipient).filter(
-            (Campaign.name.ilike(search_filter)) | 
+            Campaign.user_id == current_user.id,
+            ((Campaign.name.ilike(search_filter)) | 
             (Campaign.subject.ilike(search_filter)) |
-            (Recipient.email.ilike(search_filter))
+            (Recipient.email.ilike(search_filter)))
         ).distinct().order_by(Campaign.created_at.desc()).all()
     else:
-        campaigns = Campaign.query.order_by(Campaign.created_at.desc()).all()
+        campaigns = Campaign.query.filter_by(user_id=current_user.id).order_by(Campaign.created_at.desc()).all()
 
     # In a real app we might want pagination or limiting
     return render_template('dashboard.html', campaigns=[c for c in campaigns], query=query) # Pass object directly to use property methods
@@ -84,8 +121,8 @@ def new_campaign():
 @login_required
 def create_campaign():
 
-    name = request.form.get('campaign_name')
-    subject = request.form.get('subject')
+    name = escape(request.form.get('campaign_name', '').strip())
+    subject = escape(request.form.get('subject', '').strip())
     body_content = request.form.get('body_content')
     scheduled_at_str = request.form.get('scheduled_at')
     
@@ -160,6 +197,11 @@ def create_campaign():
         return redirect(url_for('main.new_campaign'))
     
     selected_account_ids = [int(aid) for aid in selected_account_ids]
+    # Validate that these accounts actually belong to the current user
+    valid_accounts = SenderAccount.query.filter(SenderAccount.id.in_(selected_account_ids), SenderAccount.user_id==current_user.id).all()
+    if len(valid_accounts) != len(selected_account_ids):
+        flash('One or more selected accounts are invalid.', 'danger')
+        return redirect(url_for('main.new_campaign'))
 
     # Create Campaign
     campaign = Campaign(
@@ -284,12 +326,14 @@ def check_and_start_scheduled_campaigns():
         # Silently fail if there's an issue (e.g., scheduled_at column doesn't exist yet)
         print(f"Scheduled campaigns check skipped: {e}")
 
-@main_bp.route('/campaign/<int:campaign_id>/delete')
+
+@main_bp.route('/campaign/<int:campaign_id>/delete', methods=['POST'])
+@login_required
 def delete_campaign(campaign_id):
-    campaign = Campaign.query.get_or_404(campaign_id)
+    campaign = Campaign.query.filter_by(id=campaign_id, user_id=current_user.id).first_or_404()
     db.session.delete(campaign)
     db.session.commit()
-    flash('Campaign discarded.', 'info')
+    flash('Campaign deleted successfully.', 'success')
     return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/campaign/<int:campaign_id>')
@@ -310,6 +354,7 @@ def campaign_detail(campaign_id):
 # --- Tracking Routes ---
 
 @main_bp.route('/track/open/<int:recipient_id>')
+@limiter.limit("60 per minute")
 def track_open(recipient_id):
     recipient = Recipient.query.get(recipient_id)
     if recipient:
@@ -327,6 +372,7 @@ def track_open(recipient_id):
     return app.response_class(pixel, mimetype='image/gif')
 
 @main_bp.route('/track/replied/<int:recipient_id>')
+@limiter.limit("60 per minute")
 def track_replied(recipient_id):
     recipient = Recipient.query.get(recipient_id)
     if recipient:
@@ -340,11 +386,9 @@ def track_replied(recipient_id):
     return render_template('tracking_success.html')
 
 @main_bp.route('/campaign/<int:campaign_id>/replied')
+@login_required
 def campaign_replied(campaign_id):
-    if 'sender_email' not in session:
-        return redirect(url_for('main.login'))
-        
-    campaign = Campaign.query.get_or_404(campaign_id)
+    campaign = Campaign.query.filter_by(id=campaign_id, user_id=current_user.id).first_or_404()
     
     # Get all recipients who have replied
     replied_recipients = [
@@ -355,17 +399,15 @@ def campaign_replied(campaign_id):
     return render_template('campaign_replied.html', campaign=campaign, replied_recipients=replied_recipients)
 
 @main_bp.route('/export/report')
+@login_required
 def export_report():
-    if 'sender_email' not in session:
-        return redirect(url_for('main.login'))
-        
     campaign_id = request.args.get('campaign_id', type=int)
     
     if campaign_id:
-        campaigns = [Campaign.query.get_or_404(campaign_id)]
+        campaigns = [Campaign.query.filter_by(id=campaign_id, user_id=current_user.id).first_or_404()]
         filename = f"report_campaign_{campaign_id}.xlsx"
     else:
-        campaigns = Campaign.query.all()
+        campaigns = Campaign.query.filter_by(user_id=current_user.id).all()
         filename = "all_campaigns_report.xlsx"
         
     data = []
@@ -423,7 +465,7 @@ def manage_accounts():
 @main_bp.route('/accounts/add', methods=['POST'])
 @login_required
 def add_account():
-    email = request.form.get('email')
+    email = escape(request.form.get('email', '').strip())
     password = request.form.get('password')
     
     if not email or not password:

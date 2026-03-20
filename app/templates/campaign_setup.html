@@ -181,7 +181,7 @@
                     {% endfor %}
                 </div>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
-                    The system will automatically route emails through these accounts, switching if a quota is reached.
+                    The system will automatically route emails through these accounts, switching accounts after every batch.
                 </p>
             </div>
 
@@ -200,7 +200,7 @@
                     <input type="number" id="batch_size" name="batch_size" value="50" min="1" required
                         placeholder="e.g. 50">
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
-                        Number of emails to send before pausing.
+                        Number of emails to send before pausing or rotating to the next account.
                     </p>
                 </div>
 

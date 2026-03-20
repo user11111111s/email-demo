@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="glass-panel animate-fade-in" style="text-align: center; max-width: 800px; margin: 4rem auto; padding: 4rem 2rem;">
+    <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;">
+        <i class="fa-solid fa-paper-plane"></i>
+    </div>
+    <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">Welcome to IEI Dispatcher</h1>
+    <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 3rem; line-height: 1.6;">
+        Streamline your mass email campaigns with our powerful, intuitive, and highly customizable dispatching platform. 
+        Track opens, manage recipients, and schedule sends effortlessly.
+    </p>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        <a href="{{ url_for('main.login') }}" class="btn btn-secondary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">
+            Log In <i class="fa-solid fa-arrow-right-to-bracket" style="margin-left: 0.5rem;"></i>
+        </a>
+        <a href="{{ url_for('main.signup') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">
+            Sign Up <i class="fa-solid fa-user-plus" style="margin-left: 0.5rem;"></i>
+        </a>
+    </div>
+</div>
+
+<div class="glass-panel animate-fade-in" style="margin-top: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; padding: 2rem; border-top: 1px solid rgba(255,255,255,0.1);">
+    <div style="text-align: center;">
+        <i class="fa-solid fa-calendar-check" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+        <h3>Smart Scheduling</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Schedule your campaigns to go out at the perfect moment, improving open rates.</p>
+    </div>
+    <div style="text-align: center;">
+        <i class="fa-solid fa-chart-pie" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+        <h3>Advanced Tracking</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Monitor opens and clicks in real-time, giving you actionable insights.</p>
+    </div>
+    <div style="text-align: center;">
+        <i class="fa-solid fa-users" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+        <h3>Easy Management</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Import contacts directly from files and manage different sending accounts.</p>
+    </div>
+</div>
+{% endblock %}

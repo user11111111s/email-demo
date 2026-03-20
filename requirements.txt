@@ -13,3 +13,4 @@ flask-login
 cryptography
 flask-bcrypt
 flask-wtf
+Flask-Limiter

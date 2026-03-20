@@ -91,6 +91,11 @@
                             title="Export Excel">
                             <i class="fa-solid fa-file-excel"></i>
                         </a>
+                        <form method="POST" action="{{ url_for('main.delete_campaign', campaign_id=campaign.id) }}" onsubmit="return confirm('Are you sure you want to delete this campaign? This action cannot be undone.');" style="margin: 0;">
+                            <button type="submit" class="btn btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.9rem; border-color: #dc2626; color: #dc2626;" title="Delete Campaign">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
                     </div>
                 </td>
             </tr>

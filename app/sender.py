@@ -57,24 +57,25 @@ def send_async(app, campaign_id):
             return s
 
         try:
-            base_url = "http://127.0.0.1:5002"  # Hardcoded for local dev
+            import os
+            base_url = os.environ.get("BASE_URL", "http://127.0.0.1:5002").rstrip('/')
 
             sent_in_batch = 0
             for i, r in enumerate(recipients):
-                # Smart Routing Check: If current account hit limit, switch
-                while current_account_idx < len(sender_accounts):
-                    acc_data = sender_accounts[current_account_idx]
-                    if acc_data['model'].daily_quota_used < 495:
-                        break
-                    current_account_idx += 1
-                
-                if current_account_idx >= len(sender_accounts):
+                # Check if ANY account has quota left
+                available_accounts = [acc for acc in sender_accounts if acc['model'].daily_quota_used < 495]
+                if not available_accounts:
                     print("All selected accounts have reached their daily quota.")
-                    # Mark remaining as failed or keep as pending for tomorrow? 
                     # Requirement says provide clear error handling if all hit quota.
                     campaign.status = 'Failed' # Or 'Partially Completed'?
                     db.session.commit()
                     break
+
+                # Ensure current_account_idx points to a valid account
+                acc_data = sender_accounts[current_account_idx]
+                while acc_data['model'].daily_quota_used >= 495:
+                    current_account_idx = (current_account_idx + 1) % len(sender_accounts)
+                    acc_data = sender_accounts[current_account_idx]
 
                 acc_data = sender_accounts[current_account_idx]
                 
@@ -140,10 +141,17 @@ def send_async(app, campaign_id):
                     sent_in_batch += 1
                     time.sleep(1) 
                     
-                    if sent_in_batch >= campaign.batch_size and (i + 1) < len(recipients):
-                        print(f"Batch limit reached. Pausing for {campaign.batch_delay} minutes.")
-                        time.sleep(campaign.batch_delay * 60)
-                        sent_in_batch = 0 
+                    if sent_in_batch >= campaign.batch_size:
+                        sent_in_batch = 0
+                        # Rotate to next account if we have more than one
+                        if len(sender_accounts) > 1:
+                            print(f"Batch limit reached. Rotating to next account.")
+                            current_account_idx = (current_account_idx + 1) % len(sender_accounts)
+                            
+                        # Respect the user's batch delay regardless of rotation
+                        if campaign.batch_delay > 0 and (i + 1) < len(recipients):
+                            print(f"Pausing for {campaign.batch_delay} minutes.")
+                            time.sleep(campaign.batch_delay * 60)
 
                 except Exception as e:
                     print(f"Failed to send to {r.email}: {e}")
